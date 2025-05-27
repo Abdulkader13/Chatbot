@@ -1,0 +1,13 @@
+# Maven
+/target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Config (не публиковать в GitHub)
+config.properties
+
+# Default ignored files
+/shelf/
+/workspace.xml

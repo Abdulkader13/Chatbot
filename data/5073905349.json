@@ -1,0 +1,35 @@
+{
+  "telegramId": 5073905349,
+  "remindersEnabled": true,
+  "remindBeforeDays": 4,
+  "defaultBudget": 10000.0,
+  "giftsByRecipient": {
+    "Mo": [
+      {
+        "giftName": "phone",
+        "price": 5000.0,
+        "eventDate": "2005-05-05",
+        "comment": "hello"
+      }
+    ],
+    "Zak": [
+      {
+        "giftName": "phone",
+        "price": 500.0,
+        "eventDate": "2001-05-05",
+        "comment": "hello"
+      }
+    ],
+    "Jack": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-08-04",
+        "comment": "white"
+      }
+    ]
+  },
+  "individualBudgets": {
+    "Общий": 1000.0
+  }
+}
