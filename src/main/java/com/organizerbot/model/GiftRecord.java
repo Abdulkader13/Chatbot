@@ -1,4 +1,3 @@
-
 package com.organizerbot.model;
 
 import java.time.LocalDate;
@@ -29,9 +28,15 @@ public class GiftRecord {
         public void setEventDate(LocalDate date) { this.eventDate = date; }
         public void setComment(String comment) { this.comment = comment; }
 
+        // Aliases for other services
+        public String getName() { return getGiftName(); }
+        public LocalDate getDate() { return getEventDate(); }
+        public void setAmount(double amount) { this.price = amount; }
+
         @Override
         public String toString() {
-            return giftName + " (" + price + "₽, " + eventDate + ") " + (comment != null ? "// " + comment : "");
+            return giftName + " (" + price + "₽, " + eventDate + ") " +
+                    (comment != null && !comment.isEmpty() ? "// " + comment : "");
         }
     }
 
@@ -47,8 +52,12 @@ public class GiftRecord {
     }
 
     public Long getTelegramId() { return telegramId; }
+
     public int getRemindBeforeDays() { return remindBeforeDays; }
     public void setRemindBeforeDays(int days) { this.remindBeforeDays = days; }
+
+    public boolean isRemindersEnabled() { return remindersEnabled; }
+    public void setRemindersEnabled(boolean enabled) { this.remindersEnabled = enabled; }
 
     public void addGift(String recipient, Gift gift) {
         giftsByRecipient.computeIfAbsent(recipient, r -> new ArrayList<>()).add(gift);
@@ -60,26 +69,6 @@ public class GiftRecord {
 
     public Map<String, List<Gift>> getAllGifts() {
         return giftsByRecipient;
-    }
-
-    public void setIndividualBudget(String recipient, double budget) {
-        individualBudgets.put(recipient, budget);
-    }
-
-    public double getBudgetFor(String recipient) {
-        return individualBudgets.getOrDefault(recipient, defaultBudget);
-    }
-
-    public double getTotalSpentFor(String recipient) {
-        return getGiftsFor(recipient).stream().mapToDouble(Gift::getPrice).sum();
-    }
-
-    public boolean isRemindersEnabled() {
-        return remindersEnabled;
-    }
-
-    public void setRemindersEnabled(boolean remindersEnabled) {
-        this.remindersEnabled = remindersEnabled;
     }
 
     public boolean removeGift(String recipient, int index) {
@@ -98,6 +87,18 @@ public class GiftRecord {
             return true;
         }
         return false;
+    }
+
+    public double getBudgetFor(String recipient) {
+        return individualBudgets.getOrDefault(recipient, defaultBudget);
+    }
+
+    public void setIndividualBudget(String recipient, double budget) {
+        individualBudgets.put(recipient, budget);
+    }
+
+    public double getTotalSpentFor(String recipient) {
+        return getGiftsFor(recipient).stream().mapToDouble(Gift::getPrice).sum();
     }
 
     public Map<String, List<Gift>> filterGiftsByMonth(int year, int month) {

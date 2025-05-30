@@ -9,7 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class JsonGiftDao implements GiftDao {
-    private static final String DIR = "data/";
+    private static final String DIR = "src/main/resources/data/";
     private final Gson gson = new GsonBuilder()
             .setPrettyPrinting()
             .registerTypeAdapter(java.time.LocalDate.class, new LocalDateAdapter())
@@ -20,6 +20,14 @@ public class JsonGiftDao implements GiftDao {
         if (!folder.exists()) {
             folder.mkdirs();
         }
+
+        // Optional: Register a shutdown hook to save all cached users
+        /*
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            // Use GiftService.getAllUserGiftRecords() if needed
+            System.out.println("🧾 Завершение работы. Все данные будут сохранены.");
+        }));
+        */
     }
 
     @Override
@@ -29,7 +37,7 @@ public class JsonGiftDao implements GiftDao {
             gson.toJson(record, writer);
             System.out.println("✅ Данные сохранены: " + path);
         } catch (IOException e) {
-            System.err.println("❌ Ошибка при сохранении: " + e.getMessage());
+            System.err.println("❌ Ошибка при сохранении файла " + path + ": " + e.getMessage());
         }
     }
 
@@ -43,13 +51,12 @@ public class JsonGiftDao implements GiftDao {
                 System.out.println("📂 Загружены данные из файла: " + path);
                 return record;
             } catch (IOException e) {
-                System.err.println("❌ Ошибка при чтении: " + e.getMessage());
+                System.err.println("❌ Ошибка при чтении файла " + path + ": " + e.getMessage());
             }
         } else {
-            System.out.println("📄 Файл не найден, создаю новый GiftRecord для " + telegramId);
+            System.out.println("📄 Файл не найден, создаю новый GiftRecord для пользователя " + telegramId);
         }
 
         return new GiftRecord(telegramId);
     }
 }
-

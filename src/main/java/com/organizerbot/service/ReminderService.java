@@ -1,58 +1,84 @@
 package com.organizerbot.service;
 
-import com.organizerbot.dao.GiftDao;
-import com.organizerbot.dao.JsonGiftDao;
 import com.organizerbot.model.GiftRecord;
 import com.organizerbot.model.GiftRecord.Gift;
+import com.organizerbot.util.DateUtil;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ReminderService {
-    private final GiftDao dao = new JsonGiftDao();
-    private final AbsSender bot;
 
-    public ReminderService(AbsSender bot) {
+    private final GiftService giftService = new GiftService();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    private AbsSender bot; // Needs to be injected from BotController
+
+    public void setBot(AbsSender bot) {
         this.bot = bot;
     }
 
-    public void checkAllUsers(List<Long> userIds) {
-        for (Long userId : userIds) {
-            GiftRecord record = dao.load(userId);
-            if (!record.isRemindersEnabled()) continue;
+    public void startReminderScheduler() {
+        scheduler.scheduleAtFixedRate(this::checkReminders, 0, 1, TimeUnit.DAYS);
+    }
+
+    private void checkReminders() {
+        Map<Long, GiftRecord> allUsersData = giftService.getAllUserGiftRecords();
+
+        for (Map.Entry<Long, GiftRecord> entry : allUsersData.entrySet()) {
+            Long userId = entry.getKey();
+            GiftRecord record = entry.getValue();
 
             int daysBefore = record.getRemindBeforeDays();
-            LocalDate targetDate = LocalDate.now().plusDays(daysBefore);
-            StringBuilder reminder = new StringBuilder();
 
-            for (Map.Entry<String, List<Gift>> entry : record.getAllGifts().entrySet()) {
-                String name = entry.getKey();
-                for (Gift g : entry.getValue()) {
-                    if (g.getEventDate().isEqual(targetDate)) {
-                        reminder.append("📌 Напоминание: ").append(name)
-                                .append(" — ").append(g.getGiftName())
-                                .append(" (").append(g.getEventDate()).append(")").append("\n");
+            LocalDate today = LocalDate.now();
+
+            for (Map.Entry<String, List<Gift>> recipientEntry : record.getAllGifts().entrySet()) {
+                String recipient = recipientEntry.getKey();
+
+                for (Gift gift : recipientEntry.getValue()) {
+                    if (gift.getDate() == null) continue;
+
+                    LocalDate giftDate = gift.getDate();
+                    LocalDate reminderDate = giftDate.minusDays(daysBefore);
+
+                    if (reminderDate.isEqual(today)) {
+                        sendReminder(userId, recipient, gift);
                     }
                 }
-            }
-
-            if (reminder.length() > 0) {
-                SendMessage msg = new SendMessage();
-                msg.setChatId(userId.toString());
-                msg.setText(reminder.toString());
-
-                try {
-                    bot.execute(msg);
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
-                }
-            }
-
             }
         }
     }
 
+    private void sendReminder(Long userId, String recipient, Gift gift) {
+        if (bot == null) return;
+
+        String text = String.format("🔔 Напоминание! Приближается дата подарка:\n\n" +
+                        "🎁 Получатель: %s\n🎉 Подарок: %s\n💰 Цена: %.2f\n📅 Дата: %s\n📝 Комментарий: %s",
+                recipient,
+                gift.getName(),
+                gift.getPrice(),
+                DateUtil.format(gift.getDate()),
+                gift.getComment() != null ? gift.getComment() : "—"
+        );
+
+        SendMessage message = new SendMessage();
+        message.setChatId(userId.toString());
+        message.setText(text);
+
+        try {
+            bot.execute(message);
+        } catch (Exception e) {
+            System.err.println("Ошибка при отправке напоминания: " + e.getMessage());
+        }
+    }
+
+    public void shutdownScheduler() {
+        scheduler.shutdown();
+    }
+}

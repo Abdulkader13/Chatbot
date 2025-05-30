@@ -1,23 +1,31 @@
 package com.organizerbot.controller;
 
-import com.organizerbot.controller.EditHandler;
 import com.organizerbot.model.GiftRecord.Gift;
 import com.organizerbot.service.GiftService;
+import com.organizerbot.service.ReminderService;
 import com.organizerbot.util.DateUtil;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ForceReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.*;
 
 public class BotController extends TelegramLongPollingBot {
     private final GiftService service = new GiftService();
     private final EditHandler editHandler = new EditHandler();
+    private final ReminderService reminderService = new ReminderService();
+
+    public BotController() {
+        reminderService.setBot(this);
+        reminderService.startReminderScheduler();
+    }
 
     @Override
     public String getBotUsername() {
@@ -31,13 +39,67 @@ public class BotController extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (update.hasMessage() && update.getMessage().hasText()) {
-            Message message = update.getMessage();
-            String text = message.getText();
-            Long userId = message.getChatId();
+        try {
+            if (update.hasCallbackQuery()) {
+                String data = update.getCallbackQuery().getData();
+                Long userId = update.getCallbackQuery().getMessage().getChatId();
 
-            try {
-                // Ответ на force reply
+                if (data.startsWith("edit_recipient:")) {
+                    String recipient = data.substring("edit_recipient:".length());
+                    execute(editHandler.buildGiftButtons(userId, recipient));
+                    return;
+                }
+
+                if (data.startsWith("edit_gift:")) {
+                    String[] parts = data.split(":");
+                    if (parts.length == 3) {
+                        String recipient = parts[1];
+                        int index = Integer.parseInt(parts[2]);
+                        execute(editHandler.buildEditFieldButtons(userId, recipient, index));
+                        return;
+                    }
+                }
+
+                if (data.startsWith("edit_field:")) {
+                    String[] parts = data.split(":");
+                    if (parts.length == 4) {
+                        String field = parts[1];
+                        String recipient = parts[2];
+                        int index = Integer.parseInt(parts[3]);
+                        editHandler.buildEditFieldButtons(userId, recipient, index);
+                        sendMsg(userId, editHandler.handleGiftFieldSelection(userId, field));
+                        return;
+                    }
+                }
+
+                if (data.startsWith("delete_gift:")) {
+                    String[] parts = data.split(":");
+                    if (parts.length == 3) {
+                        String recipient = parts[1];
+                        int index = Integer.parseInt(parts[2]);
+                        boolean success = service.deleteGift(userId, recipient, index);
+                        if (success) {
+                            sendMsg(userId, "🗑️ Подарок удалён.");
+                            execute(editHandler.buildGiftButtons(userId, recipient));
+                        } else {
+                            sendMsg(userId, "❌ Не удалось удалить подарок.");
+                        }
+                        return;
+                    }
+                }
+
+                if (data.equals("edit_cancel")) {
+                    editHandler.clear(userId);
+                    sendMsg(userId, "❌ Редактирование отменено.");
+                    return;
+                }
+            }
+
+            if (update.hasMessage() && update.getMessage().hasText()) {
+                Message message = update.getMessage();
+                String text = message.getText();
+                Long userId = message.getChatId();
+
                 if (message.getReplyToMessage() != null) {
                     String original = message.getReplyToMessage().getText();
                     if (original.contains("Введите сумму бюджета")) {
@@ -53,17 +115,13 @@ public class BotController extends TelegramLongPollingBot {
                     }
                 }
 
-                // Обработка редактирования
                 if (text.equals("✏️ Редактировать список")) {
-                    sendMsg(userId, editHandler.startRecipientSelection(userId));
+                    execute(editHandler.buildRecipientButtons(userId));
                     return;
                 }
-                if (editHandler.awaitingRecipientOnly(userId)) {
-                    sendMsg(userId, editHandler.handleRecipientInput(userId, text));
-                    return;
-                }
-                if (editHandler.awaitingFinalGift(userId)) {
-                    sendMsg(userId, editHandler.handleGiftEditInput(userId, text));
+
+                if (editHandler.awaitingFieldInput(userId)) {
+                    sendMsg(userId, editHandler.handleGiftFieldInput(userId, text));
                     return;
                 }
 
@@ -96,19 +154,20 @@ public class BotController extends TelegramLongPollingBot {
                         String response = service.addGift(userId, recipient, gift);
                         sendMsg(userId, response);
                     } else {
-                        sendMsg(userId, "❌ Формат: Имя - Подарок - Сумма - Дата - Комментарий");
+                        sendMsg(userId, "❌ Неверный формат. Пример: Имя - Подарок - Сумма - Дата - Комментарий");
                     }
                 } else {
                     sendMsg(userId, "⚠️ Неизвестная команда. Используйте /start.");
                 }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                try {
-                    sendMsg(userId, "⚠️ Ошибка: " + e.getMessage());
-                } catch (TelegramApiException ex) {
-                    ex.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            try {
+                if (update.hasMessage()) {
+                    sendMsg(update.getMessage().getChatId(), "⚠️ Ошибка: " + e.getMessage());
                 }
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
         }
     }

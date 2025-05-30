@@ -13,12 +13,25 @@ public class GiftService {
     private final GiftDao dao = new JsonGiftDao();
     private final Map<Long, GiftRecord> users = new HashMap<>();
 
+    // ⚠️ Always loads from disk if not in cache
     public GiftRecord getUser(Long id) {
-        return users.computeIfAbsent(id, i -> dao.load(id));
+        return users.computeIfAbsent(id, i -> {
+            GiftRecord record = dao.load(id);
+            if (record == null) record = new GiftRecord(i);
+            return record;
+        });
+    }
+
+    // 🔁 Reloads from disk forcibly
+    public GiftRecord refreshUser(Long id) {
+        GiftRecord record = dao.load(id);
+        users.put(id, record);
+        return record;
     }
 
     public String addGift(Long userId, String recipient, Gift gift) {
         GiftRecord record = getUser(userId);
+
         List<Gift> gifts = record.getGiftsFor(recipient);
         for (Gift g : gifts) {
             if (g.getGiftName().equalsIgnoreCase(gift.getGiftName()) &&
@@ -27,16 +40,18 @@ public class GiftService {
             }
         }
 
+        // 🔍 Budget check BEFORE saving
+        double totalIfAdded = record.getTotalSpentFor(recipient) + gift.getPrice();
+        double limit = record.getBudgetFor(recipient);
+        String warning = "";
+        if (totalIfAdded > limit) {
+            warning = "⚠️ Превышен лимит бюджета для " + recipient + " (" + limit + "₽)!\n";
+        }
+
         record.addGift(recipient, gift);
         dao.save(record);
 
-        double total = record.getTotalSpentFor(recipient);
-        double limit = record.getBudgetFor(recipient);
-        if (total > limit) {
-            return "🎁 Подарок добавлен, но превышен лимит для " + recipient + ": " + limit + "₽!";
-        }
-
-        return "✅ Подарок добавлен для " + recipient + "!";
+        return warning + "✅ Подарок добавлен для " + recipient + "!";
     }
 
     public String listGifts(Long userId) {
@@ -64,24 +79,36 @@ public class GiftService {
         return getUser(userId).getBudgetFor(recipient);
     }
 
-    // ✅ Получить все подарки по пользователю
     public Map<String, List<Gift>> getAllGifts(Long userId) {
         return getUser(userId).getAllGifts();
     }
 
-    // ✅ Редактировать подарок
     public boolean editGift(Long userId, String recipient, int index, Gift newGift) {
         GiftRecord record = getUser(userId);
         boolean result = record.editGift(recipient, index, newGift);
-        if (result) dao.save(record);
+        if (result) {
+            dao.save(record); // 💾 Persist immediately
+        }
         return result;
     }
 
-    // ✅ Удалить подарок (если решишь добавить)
     public boolean deleteGift(Long userId, String recipient, int index) {
         GiftRecord record = getUser(userId);
         boolean result = record.removeGift(recipient, index);
-        if (result) dao.save(record);
+
+        if (result) {
+            // 🧹 Remove recipient if no more gifts
+            if (record.getGiftsFor(recipient).isEmpty()) {
+                record.getAllGifts().remove(recipient);
+            }
+            dao.save(record);  // 💾 Always save changes
+        }
+
         return result;
+    }
+
+    // ✅ For reminder system
+    public Map<Long, GiftRecord> getAllUserGiftRecords() {
+        return users;
     }
 }
