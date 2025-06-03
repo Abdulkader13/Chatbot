@@ -25,6 +25,7 @@ public class GiftService {
     // 🔁 Reloads from disk forcibly
     public GiftRecord refreshUser(Long id) {
         GiftRecord record = dao.load(id);
+        if (record == null) record = new GiftRecord(id);
         users.put(id, record);
         return record;
     }
@@ -50,12 +51,13 @@ public class GiftService {
 
         record.addGift(recipient, gift);
         dao.save(record);
+        users.put(userId, record); // update in-memory cache too
 
         return warning + "✅ Подарок добавлен для " + recipient + "!";
     }
 
     public String listGifts(Long userId) {
-        GiftRecord record = getUser(userId);
+        GiftRecord record = refreshUser(userId);
         if (record.getAllGifts().isEmpty()) return "📭 Список подарков пуст.";
 
         StringBuilder sb = new StringBuilder("🎁 Подарки по получателям:\n");
@@ -73,6 +75,7 @@ public class GiftService {
         GiftRecord record = getUser(userId);
         record.setIndividualBudget(recipient, budget);
         dao.save(record);
+        users.put(userId, record);
     }
 
     public double getBudget(Long userId, String recipient) {
@@ -80,7 +83,7 @@ public class GiftService {
     }
 
     public Map<String, List<Gift>> getAllGifts(Long userId) {
-        return getUser(userId).getAllGifts();
+        return refreshUser(userId).getAllGifts(); // always up-to-date
     }
 
     public boolean editGift(Long userId, String recipient, int index, Gift newGift) {
@@ -88,6 +91,7 @@ public class GiftService {
         boolean result = record.editGift(recipient, index, newGift);
         if (result) {
             dao.save(record); // 💾 Persist immediately
+            users.put(userId, record); // 🧠 Update memory
         }
         return result;
     }
@@ -102,6 +106,7 @@ public class GiftService {
                 record.getAllGifts().remove(recipient);
             }
             dao.save(record);  // 💾 Always save changes
+            users.put(userId, record);
         }
 
         return result;
