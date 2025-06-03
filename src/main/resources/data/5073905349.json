@@ -1,0 +1,42 @@
+{
+  "userId": 5073905349,
+  "defaultBudget": 2000,
+  "individualBudgets": {},
+  "gifts": {
+    "Test": [
+      {
+        "giftName": "dhdhdh",
+        "price": 7000.0,
+        "eventDate": "2000-06-03",
+        "comment": "Balck"
+      }
+    ],
+    "Jack": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-08-04",
+        "comment": "white"
+      }
+    ],
+    "Harry": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-06-04",
+        "comment": "white"
+      }
+    ],
+    "Johny": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-06-03",
+        "comment": "white"
+      }
+    ]
+  },
+  "remindBeforeDays": 0,
+  "reminderHour": 19,
+  "reminderMinute": 26
+}

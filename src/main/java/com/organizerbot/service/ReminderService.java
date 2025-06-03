@@ -7,6 +7,8 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -16,39 +18,46 @@ public class ReminderService {
 
     private final GiftService giftService = new GiftService();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
-    private AbsSender bot; // Injected from BotController
+    private AbsSender bot;
 
     public void setBot(AbsSender bot) {
         this.bot = bot;
     }
 
     public void startReminderScheduler() {
-        scheduler.scheduleAtFixedRate(this::checkReminders, 0, 1, TimeUnit.DAYS);
+        // ⏱ Run every 1 minute to allow precise reminder testing
+        scheduler.scheduleAtFixedRate(this::checkReminders, 0, 1, TimeUnit.MINUTES);
     }
 
     private void checkReminders() {
         Map<Long, GiftRecord> allUsersData = giftService.getAllUserGiftRecords();
+        LocalDateTime now = LocalDateTime.now();
 
         for (Map.Entry<Long, GiftRecord> entry : allUsersData.entrySet()) {
             Long userId = entry.getKey();
             GiftRecord record = entry.getValue();
 
             int daysBefore = record.getRemindBeforeDays();
+            int targetHour = record.getReminderHour();     // 🕐 New
+            int targetMinute = record.getReminderMinute(); // 🕐 New
 
-            LocalDate today = LocalDate.now();
+            LocalDate today = now.toLocalDate();
+            LocalTime nowTime = now.toLocalTime();
+            LocalTime userTime = LocalTime.of(targetHour, targetMinute);
 
-            for (Map.Entry<String, List<Gift>> recipientEntry : record.getAllGifts().entrySet()) {
-                String recipient = recipientEntry.getKey();
+            if (nowTime.getHour() == userTime.getHour() && nowTime.getMinute() == userTime.getMinute()) {
+                for (Map.Entry<String, List<Gift>> recipientEntry : record.getAllGifts().entrySet()) {
+                    String recipient = recipientEntry.getKey();
 
-                for (Gift gift : recipientEntry.getValue()) {
-                    if (gift.getEventDate() == null) continue;
+                    for (Gift gift : recipientEntry.getValue()) {
+                        if (gift.getEventDate() == null) continue;
 
-                    LocalDate giftDate = gift.getEventDate();
-                    LocalDate reminderDate = giftDate.minusDays(daysBefore);
+                        LocalDate giftDate = gift.getEventDate();
+                        LocalDate reminderDate = giftDate.minusDays(daysBefore);
 
-                    if (reminderDate.isEqual(today)) {
-                        sendReminder(userId, recipient, gift);
+                        if (reminderDate.isEqual(today)) {
+                            sendReminder(userId, recipient, gift);
+                        }
                     }
                 }
             }

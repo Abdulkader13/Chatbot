@@ -108,15 +108,10 @@ public class BotController extends TelegramLongPollingBot {
 
                 if (editHandler.isAwaitingBudgetInput(userId)) {
                     String response = editHandler.handleBudgetInput(userId, text);
-                    try {
-                        execute(new SendMessage(userId.toString(), response));
-                    } catch (TelegramApiException e) {
-                        e.printStackTrace();
-                    }
+                    execute(new SendMessage(userId.toString(), response));
                     return;
                 }
 
-                // ✅ Fixed section: default budget
                 if (message.getReplyToMessage() != null) {
                     String original = message.getReplyToMessage().getText();
 
@@ -129,6 +124,18 @@ public class BotController extends TelegramLongPollingBot {
                         int days = Integer.parseInt(text);
                         service.getUser(userId).setRemindBeforeDays(days);
                         sendMsg(userId, "🔔 Напоминания установлены: за " + days + " дней.");
+                        return;
+                    } else if (original.contains("Введите время напоминания")) {
+                        try {
+                            String[] parts = text.trim().split(":");
+                            int hour = Integer.parseInt(parts[0]);
+                            int minute = Integer.parseInt(parts[1]);
+                            service.getUser(userId).setReminderHour(hour);
+                            service.getUser(userId).setReminderMinute(minute);
+                            sendMsg(userId, "⏰ Время напоминания установлено на " + hour + ":" + String.format("%02d", minute));
+                        } catch (Exception e) {
+                            sendMsg(userId, "❌ Неверный формат. Используйте ЧЧ:ММ, например 09:30");
+                        }
                         return;
                     } else if (original.contains("Введите новый бюджет для")) {
                         String recipient = awaitingBudgetRecipient.remove(userId);
@@ -155,7 +162,8 @@ public class BotController extends TelegramLongPollingBot {
                             "/add — добавить подарок\n" +
                             "/list — список подарков\n" +
                             "/budget Имя 5000 — бюджет на получателя\n" +
-                            "/reminddays 3 — напомнить за N дней\n\n" +
+                            "/reminddays 3 — напомнить за N дней\n" +
+                            "/remindtime 09:00 — установить точное время напоминания\n\n" +
                             "Формат подарка:\nИмя - Подарок - Сумма - ГГГГ-ММ-ДД - Комментарий");
                 } else if (text.equals("/list") || text.equals("📜 Список")) {
                     sendMsg(userId, service.listGifts(userId));
@@ -165,6 +173,8 @@ public class BotController extends TelegramLongPollingBot {
                     sendForceReply(userId, "Введите сумму бюджета (например 5000):");
                 } else if (text.equals("🔔 Напомнить за N дней")) {
                     sendForceReply(userId, "Введите количество дней до напоминания:");
+                } else if (text.equals("/remindtime") || text.equals("⏰ Время напоминания")) {
+                    sendForceReply(userId, "Введите время напоминания (например 09:00):");
                 } else if (text.contains(" - ")) {
                     String[] parts = text.split(" - ");
                     if (parts.length >= 5) {
@@ -225,6 +235,7 @@ public class BotController extends TelegramLongPollingBot {
         row2.add("🔔 Напомнить за N дней");
 
         KeyboardRow row3 = new KeyboardRow();
+        row3.add("⏰ Время напоминания");
         row3.add("✏️ Редактировать список");
 
         rows.add(row1);

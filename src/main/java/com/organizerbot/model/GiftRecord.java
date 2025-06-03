@@ -8,22 +8,18 @@ import java.util.*;
 public class GiftRecord {
     private Long userId;
     private int defaultBudget = 0;
-    private Map<String, Integer> individualBudgets;
-    private Map<String, List<Gift>> gifts;
+    private Map<String, Integer> individualBudgets = new HashMap<>();
+    private Map<String, List<Gift>> gifts = new HashMap<>();
     private int remindBeforeDays = 3;
+    private int reminderHour = 9;     // ⏰ NEW: Default reminder hour
+    private int reminderMinute = 0;   // ⏰ NEW: Default reminder minute
 
     public GiftRecord(Long userId) {
         this.userId = userId;
-        this.individualBudgets = new HashMap<>();
-        this.gifts = new HashMap<>();
     }
 
     public Long getUserId() {
         return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 
     public int getDefaultBudget() {
@@ -35,33 +31,16 @@ public class GiftRecord {
     }
 
     public void setIndividualBudget(String recipient, double budget) {
-        getIndividualBudgets().put(recipient, (int) budget);
+        individualBudgets.put(recipient, (int) budget);
     }
 
     public int getBudgetFor(String recipient) {
-        return getIndividualBudgets().getOrDefault(recipient, defaultBudget);
+        return individualBudgets.getOrDefault(recipient, defaultBudget);
     }
 
     public Map<String, List<Gift>> getAllGifts() {
-        if (gifts == null) {
-            gifts = new HashMap<>();
-        }
+        if (gifts == null) gifts = new HashMap<>();
         return gifts;
-    }
-
-    public void setAllGifts(Map<String, List<Gift>> gifts) {
-        this.gifts = gifts;
-    }
-
-    public Map<String, Integer> getIndividualBudgets() {
-        if (individualBudgets == null) {
-            individualBudgets = new HashMap<>();
-        }
-        return individualBudgets;
-    }
-
-    public void setIndividualBudgets(Map<String, Integer> individualBudgets) {
-        this.individualBudgets = individualBudgets;
     }
 
     public List<Gift> getGiftsFor(String recipient) {
@@ -102,6 +81,32 @@ public class GiftRecord {
 
     public void setRemindBeforeDays(int remindBeforeDays) {
         this.remindBeforeDays = remindBeforeDays;
+    }
+
+    public int getReminderHour() {
+        return reminderHour;
+    }
+
+    public void setReminderHour(int reminderHour) {
+        this.reminderHour = reminderHour;
+    }
+
+    public int getReminderMinute() {
+        return reminderMinute;
+    }
+
+    public void setReminderMinute(int reminderMinute) {
+        this.reminderMinute = reminderMinute;
+    }
+
+    // ✅ NEW: Required for JSON load/save
+    public Map<String, Integer> getIndividualBudgets() {
+        if (individualBudgets == null) individualBudgets = new HashMap<>();
+        return individualBudgets;
+    }
+
+    public void setIndividualBudgets(Map<String, Integer> individualBudgets) {
+        this.individualBudgets = individualBudgets;
     }
 
     // Inner Gift class
