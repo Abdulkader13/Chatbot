@@ -1,19 +1,20 @@
 package com.organizerbot.dao;
 
-import com.google.gson.*;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.time.LocalDate;
 
-public class LocalDateAdapter implements JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> {
+public class LocalDateAdapter extends TypeAdapter<LocalDate> {
     @Override
-    public JsonElement serialize(LocalDate date, Type type, JsonSerializationContext context) {
-        return new JsonPrimitive(date.toString());
+    public void write(JsonWriter out, LocalDate value) throws IOException {
+        out.value(value.toString());
     }
 
     @Override
-    public LocalDate deserialize(JsonElement json, Type type, JsonDeserializationContext context)
-            throws JsonParseException {
-        return LocalDate.parse(json.getAsString());
+    public LocalDate read(JsonReader in) throws IOException {
+        return LocalDate.parse(in.nextString());
     }
 }

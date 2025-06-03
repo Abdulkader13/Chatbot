@@ -1,3 +1,4 @@
+
 package com.organizerbot.controller;
 
 import com.organizerbot.model.GiftRecord.Gift;
@@ -15,6 +16,7 @@ public class EditHandler {
     private final Map<Long, Integer> awaitingGiftIndex = new HashMap<>();
     private final Set<Long> awaitingNewGift = new HashSet<>();
     private final Map<Long, String> awaitingField = new HashMap<>();
+    private final Map<Long, String> awaitingBudgetRecipient = new HashMap<>();
 
     public boolean isEditing(Long userId) {
         return awaitingRecipient.containsKey(userId) || awaitingNewGift.contains(userId);
@@ -80,43 +82,38 @@ public class EditHandler {
         msg.setText("✏️ Что вы хотите отредактировать?");
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        InlineKeyboardButton nameBtn = new InlineKeyboardButton("🎁 Название подарка");
-        nameBtn.setCallbackData("edit_field:name:" + recipient + ":" + index);
-        rows.add(Collections.singletonList(nameBtn));
-
-        InlineKeyboardButton amountBtn = new InlineKeyboardButton("💰 Сумма");
-        amountBtn.setCallbackData("edit_field:amount:" + recipient + ":" + index);
-        rows.add(Collections.singletonList(amountBtn));
-
-        InlineKeyboardButton commentBtn = new InlineKeyboardButton("💬 Комментарий");
-        commentBtn.setCallbackData("edit_field:comment:" + recipient + ":" + index);
-        rows.add(Collections.singletonList(commentBtn));
-
-        InlineKeyboardButton cancelBtn = new InlineKeyboardButton("❌ Отмена");
-        cancelBtn.setCallbackData("edit_cancel");
-        rows.add(Collections.singletonList(cancelBtn));
+        rows.add(Collections.singletonList(createButton("🎁 Название подарка", "edit_field:name:" + recipient + ":" + index)));
+        rows.add(Collections.singletonList(createButton("💰 Сумма", "edit_field:amount:" + recipient + ":" + index)));
+        rows.add(Collections.singletonList(createButton("💬 Комментарий", "edit_field:comment:" + recipient + ":" + index)));
+        rows.add(Collections.singletonList(createButton("📊 Бюджет", "edit_budget:" + recipient)));
+        rows.add(Collections.singletonList(createButton("❌ Отмена", "edit_cancel")));
 
         msg.setReplyMarkup(new InlineKeyboardMarkup(rows));
         return msg;
     }
 
+    private InlineKeyboardButton createButton(String text, String data) {
+        InlineKeyboardButton button = new InlineKeyboardButton(text);
+        button.setCallbackData(data);
+        return button;
+    }
+
     public String handleGiftFieldSelection(Long userId, String field) {
         awaitingField.put(userId, field);
-        if ("name".equals(field)) {
-            return "✏️ Введите новое название подарка:";
-        } else if ("amount".equals(field)) {
-            return "💰 Введите новую сумму:";
-        } else if ("comment".equals(field)) {
-            return "💬 Введите новый комментарий:";
-        } else {
-            return "⚠️ Неизвестное поле.";
+        switch (field) {
+            case "name":
+                return "✏️ Введите новое название подарка:";
+            case "amount":
+                return "💰 Введите новую сумму:";
+            case "comment":
+                return "💬 Введите новый комментарий:";
+            default:
+                return "⚠️ Неизвестное поле.";
         }
     }
 
     public String handleGiftFieldInput(Long userId, String input) {
-        if (!awaitingRecipient.containsKey(userId) ||
-                !awaitingGiftIndex.containsKey(userId) ||
-                !awaitingField.containsKey(userId)) {
+        if (!awaitingRecipient.containsKey(userId) || !awaitingGiftIndex.containsKey(userId) || !awaitingField.containsKey(userId)) {
             return "⚠️ Сначала выберите поле для редактирования.";
         }
 
@@ -127,14 +124,18 @@ public class EditHandler {
 
         Gift newGift;
         try {
-            if ("name".equals(field)) {
-                newGift = new Gift(input.trim(), oldGift.getPrice(), oldGift.getEventDate(), oldGift.getComment());
-            } else if ("amount".equals(field)) {
-                newGift = new Gift(oldGift.getGiftName(), Double.parseDouble(input.trim()), oldGift.getEventDate(), oldGift.getComment());
-            } else if ("comment".equals(field)) {
-                newGift = new Gift(oldGift.getGiftName(), oldGift.getPrice(), oldGift.getEventDate(), input.trim());
-            } else {
-                return "⚠️ Неизвестное поле.";
+            switch (field) {
+                case "name":
+                    newGift = new Gift(input.trim(), oldGift.getPrice(), oldGift.getEventDate(), oldGift.getComment());
+                    break;
+                case "amount":
+                    newGift = new Gift(oldGift.getGiftName(), Double.parseDouble(input.trim()), oldGift.getEventDate(), oldGift.getComment());
+                    break;
+                case "comment":
+                    newGift = new Gift(oldGift.getGiftName(), oldGift.getPrice(), oldGift.getEventDate(), input.trim());
+                    break;
+                default:
+                    return "⚠️ Неизвестное поле.";
             }
 
             boolean result = service.editGift(userId, recipient, index, newGift);
@@ -145,6 +146,30 @@ public class EditHandler {
         }
     }
 
+    public boolean isAwaitingBudgetInput(Long userId) {
+        return awaitingBudgetRecipient.containsKey(userId);
+    }
+
+    public String handleBudgetInput(Long userId, String input) {
+        try {
+            double newBudget = Double.parseDouble(input);
+            String recipient = awaitingBudgetRecipient.remove(userId);
+            service.updateBudget(userId, recipient, newBudget);
+            return "📊 Бюджет обновлён для " + recipient + ": " + newBudget + "₽";
+        } catch (Exception e) {
+            return "❌ Ошибка при вводе бюджета: " + e.getMessage();
+        }
+    }
+
+    public void startBudgetEdit(Long userId, String recipient) {
+        awaitingBudgetRecipient.put(userId, recipient);
+    }
+
+    public String handleGiftDeleteCallback(Long userId, String recipient, int index) {
+        boolean result = service.deleteGift(userId, recipient, index);
+        return result ? "🗑️ Подарок удалён." : "⚠️ Не удалось удалить подарок.";
+    }
+
     public void clear(Long userId) {
         awaitingRecipient.remove(userId);
         awaitingGiftIndex.remove(userId);
@@ -152,15 +177,15 @@ public class EditHandler {
         awaitingField.remove(userId);
     }
 
-    public boolean awaitingFieldInput(Long userId) {
-        return awaitingField.containsKey(userId);
+    public boolean awaitingRecipientOnly(Long userId) {
+        return awaitingRecipient.containsKey(userId) && !awaitingGiftIndex.containsKey(userId);
     }
 
     public boolean awaitingFinalGift(Long userId) {
         return awaitingNewGift.contains(userId);
     }
 
-    public boolean awaitingRecipientOnly(Long userId) {
-        return awaitingRecipient.containsKey(userId) && !awaitingGiftIndex.containsKey(userId);
+    public boolean awaitingFieldInput(Long userId) {
+        return awaitingField.containsKey(userId);
     }
 }

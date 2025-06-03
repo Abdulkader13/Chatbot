@@ -17,7 +17,7 @@ public class ReminderService {
     private final GiftService giftService = new GiftService();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    private AbsSender bot; // Needs to be injected from BotController
+    private AbsSender bot; // Injected from BotController
 
     public void setBot(AbsSender bot) {
         this.bot = bot;
@@ -42,9 +42,9 @@ public class ReminderService {
                 String recipient = recipientEntry.getKey();
 
                 for (Gift gift : recipientEntry.getValue()) {
-                    if (gift.getDate() == null) continue;
+                    if (gift.getEventDate() == null) continue;
 
-                    LocalDate giftDate = gift.getDate();
+                    LocalDate giftDate = gift.getEventDate();
                     LocalDate reminderDate = giftDate.minusDays(daysBefore);
 
                     if (reminderDate.isEqual(today)) {
@@ -61,9 +61,9 @@ public class ReminderService {
         String text = String.format("🔔 Напоминание! Приближается дата подарка:\n\n" +
                         "🎁 Получатель: %s\n🎉 Подарок: %s\n💰 Цена: %.2f\n📅 Дата: %s\n📝 Комментарий: %s",
                 recipient,
-                gift.getName(),
+                gift.getGiftName(),
                 gift.getPrice(),
-                DateUtil.format(gift.getDate()),
+                DateUtil.format(gift.getEventDate()),
                 gift.getComment() != null ? gift.getComment() : "—"
         );
 

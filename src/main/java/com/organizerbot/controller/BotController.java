@@ -19,6 +19,7 @@ public class BotController extends TelegramLongPollingBot {
     private final GiftService service = new GiftService();
     private final EditHandler editHandler = new EditHandler();
     private final ReminderService reminderService = new ReminderService();
+    private final Map<Long, String> awaitingBudgetRecipient = new HashMap<>();
 
     public BotController() {
         reminderService.setBot(this);
@@ -77,13 +78,20 @@ public class BotController extends TelegramLongPollingBot {
                         int index = Integer.parseInt(parts[2]);
                         boolean success = service.deleteGift(userId, recipient, index);
                         if (success) {
-                            editHandler.clear(userId); // 🧹 No more inline buttons
+                            editHandler.clear(userId);
                             sendMsg(userId, "🗑️ Подарок удалён.");
                         } else {
                             sendMsg(userId, "❌ Не удалось удалить подарок.");
                         }
                         return;
                     }
+                }
+
+                if (data.startsWith("edit_budget:")) {
+                    String recipient = data.substring("edit_budget:".length());
+                    awaitingBudgetRecipient.put(userId, recipient);
+                    sendForceReply(userId, "💰 Введите новый бюджет для " + recipient + ":");
+                    return;
                 }
 
                 if (data.equals("edit_cancel")) {
@@ -95,20 +103,38 @@ public class BotController extends TelegramLongPollingBot {
 
             if (update.hasMessage() && update.getMessage().hasText()) {
                 Message message = update.getMessage();
-                String text = message.getText();
                 Long userId = message.getChatId();
+                String text = message.getText();
 
+                if (editHandler.isAwaitingBudgetInput(userId)) {
+                    String response = editHandler.handleBudgetInput(userId, text);
+                    try {
+                        execute(new SendMessage(userId.toString(), response));
+                    } catch (TelegramApiException e) {
+                        e.printStackTrace();
+                    }
+                    return;
+                }
+
+                // ✅ Fixed section: default budget
                 if (message.getReplyToMessage() != null) {
                     String original = message.getReplyToMessage().getText();
+
                     if (original.contains("Введите сумму бюджета")) {
                         double amount = Double.parseDouble(text);
-                        service.updateBudget(userId, "Общий", amount);
-                        sendMsg(userId, "💰 Бюджет установлен: " + amount + "₽");
+                        service.updateDefaultBudget(userId, amount);
+                        sendMsg(userId, "💰 Общий бюджет установлен: " + amount + "₽");
                         return;
                     } else if (original.contains("Введите количество дней")) {
                         int days = Integer.parseInt(text);
                         service.getUser(userId).setRemindBeforeDays(days);
                         sendMsg(userId, "🔔 Напоминания установлены: за " + days + " дней.");
+                        return;
+                    } else if (original.contains("Введите новый бюджет для")) {
+                        String recipient = awaitingBudgetRecipient.remove(userId);
+                        double newBudget = Double.parseDouble(text);
+                        service.updateBudget(userId, recipient, newBudget);
+                        sendMsg(userId, "✅ Бюджет для " + recipient + " обновлён: " + newBudget + "₽");
                         return;
                     }
                 }

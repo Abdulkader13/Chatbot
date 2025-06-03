@@ -5,8 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.organizerbot.model.GiftRecord;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 
 public class JsonGiftDao implements GiftDao {
     private static final String DIR = "src/main/resources/data/";
@@ -20,20 +19,12 @@ public class JsonGiftDao implements GiftDao {
         if (!folder.exists()) {
             folder.mkdirs();
         }
-
-        // Optional: Register a shutdown hook to save all cached users
-        /*
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            // Use GiftService.getAllUserGiftRecords() if needed
-            System.out.println("🧾 Завершение работы. Все данные будут сохранены.");
-        }));
-        */
     }
 
     @Override
     public void save(GiftRecord record) {
-        String path = DIR + record.getTelegramId() + ".json";
-        try (Writer writer = new FileWriter(path)) {
+        String path = DIR + record.getUserId() + ".json";
+        try (Writer writer = new OutputStreamWriter(new FileOutputStream(path), StandardCharsets.UTF_8)) {
             gson.toJson(record, writer);
             System.out.println("✅ Данные сохранены: " + path);
         } catch (IOException e) {
@@ -46,8 +37,13 @@ public class JsonGiftDao implements GiftDao {
         String path = DIR + telegramId + ".json";
         File file = new File(path);
         if (file.exists()) {
-            try (Reader reader = new FileReader(file)) {
+            try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
                 GiftRecord record = gson.fromJson(reader, GiftRecord.class);
+
+                // ✅ These calls ensure null fields are initialized
+                record.getAllGifts();
+                record.getIndividualBudgets();
+
                 System.out.println("📂 Загружены данные из файла: " + path);
                 return record;
             } catch (IOException e) {
