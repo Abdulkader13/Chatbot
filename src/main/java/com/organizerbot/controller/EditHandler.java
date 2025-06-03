@@ -1,4 +1,3 @@
-
 package com.organizerbot.controller;
 
 import com.organizerbot.model.GiftRecord.Gift;
@@ -86,6 +85,7 @@ public class EditHandler {
         rows.add(Collections.singletonList(createButton("💰 Сумма", "edit_field:amount:" + recipient + ":" + index)));
         rows.add(Collections.singletonList(createButton("💬 Комментарий", "edit_field:comment:" + recipient + ":" + index)));
         rows.add(Collections.singletonList(createButton("📊 Бюджет", "edit_budget:" + recipient)));
+        rows.add(Collections.singletonList(createButton("✏️ Статус", "edit_field:status:" + recipient + ":" + index)));
         rows.add(Collections.singletonList(createButton("❌ Отмена", "edit_cancel")));
 
         msg.setReplyMarkup(new InlineKeyboardMarkup(rows));
@@ -107,6 +107,8 @@ public class EditHandler {
                 return "💰 Введите новую сумму:";
             case "comment":
                 return "💬 Введите новый комментарий:";
+            case "status":
+                return "📌 Введите новый статус (например: Запланирован, В процессе, Завершено):";
             default:
                 return "⚠️ Неизвестное поле.";
         }
@@ -126,13 +128,16 @@ public class EditHandler {
         try {
             switch (field) {
                 case "name":
-                    newGift = new Gift(input.trim(), oldGift.getPrice(), oldGift.getEventDate(), oldGift.getComment());
+                    newGift = new Gift(input.trim(), oldGift.getPrice(), oldGift.getEventDate(), oldGift.getComment(), oldGift.getStatus());
                     break;
                 case "amount":
-                    newGift = new Gift(oldGift.getGiftName(), Double.parseDouble(input.trim()), oldGift.getEventDate(), oldGift.getComment());
+                    newGift = new Gift(oldGift.getGiftName(), Double.parseDouble(input.trim()), oldGift.getEventDate(), oldGift.getComment(), oldGift.getStatus());
                     break;
                 case "comment":
-                    newGift = new Gift(oldGift.getGiftName(), oldGift.getPrice(), oldGift.getEventDate(), input.trim());
+                    newGift = new Gift(oldGift.getGiftName(), oldGift.getPrice(), oldGift.getEventDate(), input.trim(), oldGift.getStatus());
+                    break;
+                case "status":
+                    newGift = new Gift(oldGift.getGiftName(), oldGift.getPrice(), oldGift.getEventDate(), oldGift.getComment(), input.trim());
                     break;
                 default:
                     return "⚠️ Неизвестное поле.";

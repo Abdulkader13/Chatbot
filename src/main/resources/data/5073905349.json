@@ -8,7 +8,8 @@
         "giftName": "dhdhdh",
         "price": 7000.0,
         "eventDate": "2000-06-03",
-        "comment": "Balck"
+        "comment": "Balck",
+        "status": "Завершено"
       }
     ],
     "Jack": [
@@ -16,15 +17,8 @@
         "giftName": "socks",
         "price": 200.0,
         "eventDate": "2000-08-04",
-        "comment": "white"
-      }
-    ],
-    "Harry": [
-      {
-        "giftName": "socks",
-        "price": 200.0,
-        "eventDate": "2000-06-04",
-        "comment": "white"
+        "comment": "white",
+        "status": "Завершено"
       }
     ],
     "Johny": [
@@ -32,11 +26,39 @@
         "giftName": "socks",
         "price": 200.0,
         "eventDate": "2000-06-03",
-        "comment": "white"
+        "comment": "white",
+        "status": "Завершено"
+      }
+    ],
+    "Нннн": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-06-03",
+        "comment": "white",
+        "status": "Завершено"
+      }
+    ],
+    "Арат": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-06-07",
+        "comment": "white",
+        "status": "Завершено"
+      }
+    ],
+    "Нннна": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-06-07",
+        "comment": "white",
+        "status": "Запланирован"
       }
     ]
   },
-  "remindBeforeDays": 0,
-  "reminderHour": 19,
-  "reminderMinute": 26
+  "remindBeforeDays": 1,
+  "reminderHour": 20,
+  "reminderMinute": 3
 }

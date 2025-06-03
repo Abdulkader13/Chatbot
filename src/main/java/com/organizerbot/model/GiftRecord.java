@@ -11,8 +11,8 @@ public class GiftRecord {
     private Map<String, Integer> individualBudgets = new HashMap<>();
     private Map<String, List<Gift>> gifts = new HashMap<>();
     private int remindBeforeDays = 3;
-    private int reminderHour = 9;     // ⏰ NEW: Default reminder hour
-    private int reminderMinute = 0;   // ⏰ NEW: Default reminder minute
+    private int reminderHour = 9;
+    private int reminderMinute = 0;
 
     public GiftRecord(Long userId) {
         this.userId = userId;
@@ -99,7 +99,6 @@ public class GiftRecord {
         this.reminderMinute = reminderMinute;
     }
 
-    // ✅ NEW: Required for JSON load/save
     public Map<String, Integer> getIndividualBudgets() {
         if (individualBudgets == null) individualBudgets = new HashMap<>();
         return individualBudgets;
@@ -109,18 +108,29 @@ public class GiftRecord {
         this.individualBudgets = individualBudgets;
     }
 
-    // Inner Gift class
+    // ✅ Inner class with status
     public static class Gift {
         private String giftName;
         private double price;
         private LocalDate eventDate;
         private String comment;
+        private String status = "Запланирован";
 
         public Gift(String giftName, double price, LocalDate eventDate, String comment) {
             this.giftName = giftName;
             this.price = price;
             this.eventDate = eventDate;
             this.comment = comment;
+            this.status = "Запланирован";
+        }
+
+        // ✅ New constructor to set status
+        public Gift(String giftName, double price, LocalDate eventDate, String comment, String status) {
+            this.giftName = giftName;
+            this.price = price;
+            this.eventDate = eventDate;
+            this.comment = comment;
+            this.status = status != null ? status : "Запланирован";
         }
 
         public String getGiftName() {
@@ -139,10 +149,19 @@ public class GiftRecord {
             return comment;
         }
 
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
         @Override
         public String toString() {
             return giftName + " — " + price + "₽ — " + eventDate +
-                    (comment != null && !comment.isEmpty() ? " — " + comment : "");
+                    (comment != null && !comment.isEmpty() ? " — " + comment : "") +
+                    " — Статус: " + status;
         }
     }
 }

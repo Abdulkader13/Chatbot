@@ -40,9 +40,12 @@ public class JsonGiftDao implements GiftDao {
             try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
                 GiftRecord record = gson.fromJson(reader, GiftRecord.class);
 
-                // ✅ These calls ensure null fields are initialized
+                // ✅ Ensure all fields are initialized
                 record.getAllGifts();
                 record.getIndividualBudgets();
+                record.getRemindBeforeDays();     // Optional: access new fields
+                record.getReminderHour();         // Optional
+                record.getReminderMinute();       // Optional
 
                 System.out.println("📂 Загружены данные из файла: " + path);
                 return record;

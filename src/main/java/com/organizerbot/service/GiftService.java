@@ -5,6 +5,7 @@ import com.organizerbot.dao.JsonGiftDao;
 import com.organizerbot.model.GiftRecord;
 import com.organizerbot.model.GiftRecord.Gift;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,7 @@ public class GiftService {
             if (record == null) {
                 record = new GiftRecord(id);
             }
-            users.put(id, record); // ✅ Critical fix
+            users.put(id, record);
         }
         return record;
     }
@@ -59,10 +60,12 @@ public class GiftService {
 
     public String listGifts(Long userId) {
         GiftRecord record = refreshUser(userId);
-        if (record.getAllGifts().isEmpty()) return "📭 Список подарков пуст.";
+        Map<String, List<Gift>> all = record.getAllGifts();
+
+        if (all.isEmpty()) return "📭 Список подарков пуст.";
 
         StringBuilder sb = new StringBuilder("🎁 Подарки по получателям:\n");
-        for (Map.Entry<String, List<Gift>> entry : record.getAllGifts().entrySet()) {
+        for (Map.Entry<String, List<Gift>> entry : all.entrySet()) {
             List<Gift> list = entry.getValue();
             if (list == null || list.isEmpty()) continue;
 
@@ -124,5 +127,28 @@ public class GiftService {
 
     public Map<Long, GiftRecord> getAllUserGiftRecords() {
         return users;
+    }
+
+    // ✅ Automatic status update method
+    public void updateStatusesAutomatically() {
+        for (Map.Entry<Long, GiftRecord> entry : users.entrySet()) {
+            GiftRecord record = entry.getValue();
+            boolean changed = false;
+
+            for (List<Gift> gifts : record.getAllGifts().values()) {
+                for (Gift gift : gifts) {
+                    if (gift.getEventDate() != null &&
+                            gift.getEventDate().isBefore(LocalDate.now()) &&
+                            !"Завершено".equalsIgnoreCase(gift.getStatus())) {
+                        gift.setStatus("Завершено");
+                        changed = true;
+                    }
+                }
+            }
+
+            if (changed) {
+                dao.save(record);
+            }
+        }
     }
 }
