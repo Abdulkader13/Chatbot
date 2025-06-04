@@ -1,7 +1,7 @@
 package com.organizerbot.service;
 
+import com.organizerbot.dao.DaoFactory;
 import com.organizerbot.dao.GiftDao;
-import com.organizerbot.dao.JsonGiftDao;
 import com.organizerbot.model.GiftRecord;
 import com.organizerbot.model.GiftRecord.Gift;
 
@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class GiftService {
-    private final GiftDao dao = new JsonGiftDao();
+    private final GiftDao dao = DaoFactory.getDao("json"); // Change to "memory" for in-memory testing
     private final Map<Long, GiftRecord> users = new HashMap<>();
 
     public GiftRecord getUser(Long id) {
@@ -34,7 +34,6 @@ public class GiftService {
 
     public String addGift(Long userId, String recipient, Gift gift) {
         GiftRecord record = getUser(userId);
-
         List<Gift> gifts = record.getGiftsFor(recipient);
         for (Gift g : gifts) {
             if (g.getGiftName().equalsIgnoreCase(gift.getGiftName()) &&
@@ -60,7 +59,6 @@ public class GiftService {
     public String listGifts(Long userId) {
         GiftRecord record = refreshUser(userId);
         Map<String, List<Gift>> all = record.getAllGifts();
-
         if (all.isEmpty()) return "📭 Список подарков пуст.";
 
         StringBuilder sb = new StringBuilder("🎁 Подарки по получателям:\n");
@@ -112,7 +110,6 @@ public class GiftService {
     public boolean deleteGift(Long userId, String recipient, int index) {
         GiftRecord record = getUser(userId);
         boolean result = record.removeGift(recipient, index);
-
         if (result) {
             if (record.getGiftsFor(recipient).isEmpty()) {
                 record.getAllGifts().remove(recipient);
@@ -120,7 +117,6 @@ public class GiftService {
             dao.save(record);
             users.put(userId, record);
         }
-
         return result;
     }
 
@@ -150,7 +146,6 @@ public class GiftService {
         }
     }
 
-    // ✅ NEW: Filter functionality
     public String filterGifts(Long userId, String status, String dateFilter, Double minPrice, Double maxPrice) {
         GiftRecord record = refreshUser(userId);
         LocalDate today = LocalDate.now();
