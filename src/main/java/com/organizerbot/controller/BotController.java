@@ -13,7 +13,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class BotController extends TelegramLongPollingBot {
     private final GiftService service = new GiftService();
@@ -156,6 +158,13 @@ public class BotController extends TelegramLongPollingBot {
                     return;
                 }
 
+                // ✅ NEW: /filter command
+                if (text.startsWith("/filter")) {
+                    String response = handleFilterCommand(userId, text);
+                    sendMsg(userId, response);
+                    return;
+                }
+
                 if (text.equals("/start")) {
                     sendMsg(userId, "👋 Добро пожаловать в Gift Organizer Bot!\n" +
                             "Команды:\n" +
@@ -163,7 +172,8 @@ public class BotController extends TelegramLongPollingBot {
                             "/list — список подарков\n" +
                             "/budget Имя 5000 — бюджет на получателя\n" +
                             "/reminddays 3 — напомнить за N дней\n" +
-                            "/remindtime 09:00 — установить точное время напоминания\n\n" +
+                            "/remindtime 09:00 — установить точное время напоминания\n" +
+                            "/filter — фильтрация подарков\n\n" +
                             "Формат подарка:\nИмя - Подарок - Сумма - ГГГГ-ММ-ДД - Комментарий");
                 } else if (text.equals("/list") || text.equals("📜 Список")) {
                     sendMsg(userId, service.listGifts(userId));
@@ -204,6 +214,64 @@ public class BotController extends TelegramLongPollingBot {
                 ex.printStackTrace();
             }
         }
+    }
+
+    // ✅ Filter command logic
+    private String handleFilterCommand(Long userId, String command) {
+        String[] parts = command.split(" ", 3);
+        if (parts.length < 2) {
+            return "❌ Пример использования:\n/filter date before 2025-06-10\n/filter status Завершено\n/filter price > 500";
+        }
+
+        String type = parts[1].toLowerCase();
+        String query = parts.length >= 3 ? parts[2].trim() : "";
+
+        List<Gift> filtered = new ArrayList<>();
+        for (List<Gift> gifts : service.getAllGifts(userId).values()) {
+            filtered.addAll(gifts);
+        }
+
+        switch (type) {
+            case "date":
+                if (query.startsWith("before")) {
+                    LocalDate date = DateUtil.parse(query.substring(6).trim());
+                    filtered = filtered.stream().filter(g -> g.getEventDate().isBefore(date)).collect(Collectors.toList());
+                } else if (query.startsWith("after")) {
+                    LocalDate date = DateUtil.parse(query.substring(5).trim());
+                    filtered = filtered.stream().filter(g -> g.getEventDate().isAfter(date)).collect(Collectors.toList());
+                } else if (query.equalsIgnoreCase("today")) {
+                    LocalDate today = LocalDate.now();
+                    filtered = filtered.stream().filter(g -> g.getEventDate().isEqual(today)).collect(Collectors.toList());
+                } else {
+                    return "❌ Неверный формат. Пример:\n/filter date before 2025-06-10";
+                }
+                break;
+            case "status":
+                filtered = filtered.stream().filter(g -> g.getStatus().equalsIgnoreCase(query)).collect(Collectors.toList());
+                break;
+            case "price":
+                if (query.contains(">")) {
+                    double value = Double.parseDouble(query.split(">")[1].trim());
+                    filtered = filtered.stream().filter(g -> g.getPrice() > value).collect(Collectors.toList());
+                } else if (query.contains("<")) {
+                    double value = Double.parseDouble(query.split("<")[1].trim());
+                    filtered = filtered.stream().filter(g -> g.getPrice() < value).collect(Collectors.toList());
+                } else {
+                    return "❌ Пример:\n/filter price > 500";
+                }
+                break;
+            default:
+                return "❌ Неизвестный тип фильтра. Используйте: date, status, price.";
+        }
+
+        if (filtered.isEmpty()) return "📭 Подарков по фильтру не найдено.";
+
+        StringBuilder sb = new StringBuilder("🔎 Найденные подарки:\n");
+        int index = 1;
+        for (Gift gift : filtered) {
+            sb.append(index++).append(". ").append(gift.toString()).append("\n");
+        }
+        return sb.toString();
     }
 
     private void sendMsg(Long chatId, String text) throws TelegramApiException {
