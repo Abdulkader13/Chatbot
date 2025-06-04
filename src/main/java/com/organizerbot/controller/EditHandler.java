@@ -108,7 +108,7 @@ public class EditHandler {
             case "comment":
                 return "💬 Введите новый комментарий:";
             case "status":
-                return "📌 Введите новый статус (например: Запланирован, В процессе, Завершено):";
+                return "📌 Введите новый статус (Запланирован / В процессе / Завершено):";
             default:
                 return "⚠️ Неизвестное поле.";
         }
@@ -137,7 +137,13 @@ public class EditHandler {
                     newGift = new Gift(oldGift.getGiftName(), oldGift.getPrice(), oldGift.getEventDate(), input.trim(), oldGift.getStatus());
                     break;
                 case "status":
-                    newGift = new Gift(oldGift.getGiftName(), oldGift.getPrice(), oldGift.getEventDate(), oldGift.getComment(), input.trim());
+                    String newStatus = input.trim();
+                    if (!newStatus.equalsIgnoreCase("Запланирован") &&
+                            !newStatus.equalsIgnoreCase("В процессе") &&
+                            !newStatus.equalsIgnoreCase("Завершено")) {
+                        return "❌ Недопустимый статус. Используйте: Запланирован, В процессе или Завершено.";
+                    }
+                    newGift = new Gift(oldGift.getGiftName(), oldGift.getPrice(), oldGift.getEventDate(), oldGift.getComment(), newStatus);
                     break;
                 default:
                     return "⚠️ Неизвестное поле.";
