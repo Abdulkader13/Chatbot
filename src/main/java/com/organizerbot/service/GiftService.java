@@ -6,9 +6,8 @@ import com.organizerbot.model.GiftRecord;
 import com.organizerbot.model.GiftRecord.Gift;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class GiftService {
     private final GiftDao dao = new JsonGiftDao();
@@ -129,7 +128,6 @@ public class GiftService {
         return users;
     }
 
-    // ✅ Automatic status update method
     public void updateStatusesAutomatically() {
         for (Map.Entry<Long, GiftRecord> entry : users.entrySet()) {
             GiftRecord record = entry.getValue();
@@ -150,5 +148,51 @@ public class GiftService {
                 dao.save(record);
             }
         }
+    }
+
+    // ✅ NEW: Filter functionality
+    public String filterGifts(Long userId, String status, String dateFilter, Double minPrice, Double maxPrice) {
+        GiftRecord record = refreshUser(userId);
+        LocalDate today = LocalDate.now();
+
+        Map<String, List<Gift>> filtered = new LinkedHashMap<>();
+        for (Map.Entry<String, List<Gift>> entry : record.getAllGifts().entrySet()) {
+            List<Gift> matched = entry.getValue().stream().filter(gift -> {
+                boolean matches = true;
+                if (status != null && !status.equalsIgnoreCase("all")) {
+                    matches &= gift.getStatus() != null && gift.getStatus().equalsIgnoreCase(status);
+                }
+                if ("before".equalsIgnoreCase(dateFilter)) {
+                    matches &= gift.getEventDate() != null && gift.getEventDate().isBefore(today);
+                } else if ("after".equalsIgnoreCase(dateFilter)) {
+                    matches &= gift.getEventDate() != null && gift.getEventDate().isAfter(today);
+                } else if ("today".equalsIgnoreCase(dateFilter)) {
+                    matches &= gift.getEventDate() != null && gift.getEventDate().isEqual(today);
+                }
+                if (minPrice != null) {
+                    matches &= gift.getPrice() >= minPrice;
+                }
+                if (maxPrice != null) {
+                    matches &= gift.getPrice() <= maxPrice;
+                }
+                return matches;
+            }).collect(Collectors.toList());
+
+            if (!matched.isEmpty()) {
+                filtered.put(entry.getKey(), matched);
+            }
+        }
+
+        if (filtered.isEmpty()) return "📭 Ничего не найдено по заданным фильтрам.";
+
+        StringBuilder sb = new StringBuilder("🔍 Результаты поиска:\n");
+        for (Map.Entry<String, List<Gift>> entry : filtered.entrySet()) {
+            sb.append("\n👤 ").append(entry.getKey()).append(":\n");
+            int index = 1;
+            for (Gift g : entry.getValue()) {
+                sb.append(index++).append(". ").append(g.toString()).append("\n");
+            }
+        }
+        return sb.toString();
     }
 }
