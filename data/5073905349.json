@@ -1,0 +1,43 @@
+{
+  "telegramId": 5073905349,
+  "remindersEnabled": true,
+  "remindBeforeDays": 3,
+  "defaultBudget": 10000.0,
+  "giftsByRecipient": {
+    "Jack": [
+      {
+        "giftName": "Three",
+        "price": 66.0,
+        "eventDate": "2000-08-04",
+        "comment": "white"
+      }
+    ],
+    "Rami": [
+      {
+        "giftName": "Ррр",
+        "price": 20000.0,
+        "eventDate": "2000-05-31",
+        "comment": "Balck"
+      }
+    ],
+    "Sam": [
+      {
+        "giftName": "Нрн",
+        "price": 355.0,
+        "eventDate": "2000-05-31",
+        "comment": "Balck"
+      }
+    ],
+    "John": [
+      {
+        "giftName": "goo",
+        "price": 400.0,
+        "eventDate": "2000-05-31",
+        "comment": "Balck"
+      }
+    ]
+  },
+  "individualBudgets": {
+    "Общий": 20.0
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "userId": 5073905349,
+  "defaultBudget": 2000,
+  "individualBudgets": {},
+  "gifts": {
+    "John": [
+      {
+        "giftName": "Phone case",
+        "price": 1000.0,
+        "eventDate": "2001-10-13",
+        "comment": "Комментарий",
+        "status": "Запланирован"
+      }
+    ],
+    "Jack": [
+      {
+        "giftName": "socks",
+        "price": 500.0,
+        "eventDate": "2004-05-22",
+        "comment": "red",
+        "status": "Запланирован"
+      }
+    ],
+    "Mary": [
+      {
+        "giftName": "toy",
+        "price": 2100.0,
+        "eventDate": "2019-03-12",
+        "comment": "small",
+        "status": "Запланирован"
+      }
+    ]
+  },
+  "remindBeforeDays": 2,
+  "reminderHour": 20,
+  "reminderMinute": 3
+}

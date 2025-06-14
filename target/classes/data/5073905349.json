@@ -1,0 +1,55 @@
+{
+  "userId": 5073905349,
+  "defaultBudget": 600,
+  "individualBudgets": {},
+  "gifts": {
+    "Jack": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-08-04",
+        "comment": "white",
+        "status": "Завершено"
+      }
+    ],
+    "Johny": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-06-03",
+        "comment": "white",
+        "status": "Завершено"
+      }
+    ],
+    "Нннн": [
+      {
+        "giftName": "Ггг",
+        "price": 200.0,
+        "eventDate": "2000-06-03",
+        "comment": "white",
+        "status": "Запланирован"
+      }
+    ],
+    "Арат": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-06-07",
+        "comment": "white",
+        "status": "Завершено"
+      }
+    ],
+    "Нннна": [
+      {
+        "giftName": "socks",
+        "price": 200.0,
+        "eventDate": "2000-06-07",
+        "comment": "white",
+        "status": "Запланирован"
+      }
+    ]
+  },
+  "remindBeforeDays": 2,
+  "reminderHour": 20,
+  "reminderMinute": 3
+}
